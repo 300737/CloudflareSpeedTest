@@ -1,4 +1,11 @@
-  jobs:
+name: Cloudflare优选IP自动更新
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"  # 每2小时自动跑一次
+  workflow_dispatch:      # 允许手动触发
+
+jobs:
   build:
     runs-on: ubuntu-latest
     steps:
@@ -20,10 +27,3 @@
             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"type\":\"A\",\"name\":\"iptv.612526.xyz\",\"content\":\"${{ env.FAST_IP }}\",\"ttl\":120,\"proxied\":false}"
-
-      - name: 推送到微信公众号
-        run: |
-          curl -s "https://www.pushplus.plus/send" \
-            -d "token=${{ secrets.PUSHPLUS_TOKEN }}" \
-            -d "title=Cloudflare优选IP更新成功" \
-            -d "content=最新
