@@ -1,5 +1,3 @@
-name: Cloudflare优选IP自动更新+微信推送
-
 on:
   schedule:
     - cron: "0 */2 * * *"  # 每2小时运行一次
