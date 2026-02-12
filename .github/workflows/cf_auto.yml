@@ -1,0 +1,36 @@
+name: Cloudflare优选IP自动更新+微信推送
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"  # 每2小时运行一次
+  workflow_dispatch:      # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载优选IP工具
+        run: |
+          wget -O CloudflareST.tar.gz https://github.com/XIU2/CloudflareSpeedTest/releases/download/v2.2.3/CloudflareST_linux_amd64.tar.gz
+          tar -zxf CloudflareST.tar.gz
+          chmod +x CloudflareST
+
+      - name: 测速获取最快IP
+        run: |
+          ./CloudflareST -tl 300 -sl 1 -dn 10 -o ip.txt
+          FAST_IP=$(head -n 1 ip.txt | awk '{print $1}')
+          echo "FAST_IP=$FAST_IP" >> $GITHUB_ENV
+
+      - name: 更新Cloudflare DNS
+        run: |
+          curl -X PUT "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/dns_records/${{ secrets.CF_RECORD_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"type\":\"A\",\"name\":\"iptv.612526.xyz\",\"content\":\"${{ env.FAST_IP }}\",\"ttl\":120,\"proxied\":false}"
+
+      - name: 推送到微信公众号
+        run: |
+          curl -s "https://www.pushplus.plus/send" \
+            -d "token=${{ secrets.PUSHPLUS_TOKEN }}" \
+            -d "title=Cloudflare优选IP更新成功" \
+            -d "content=最新IP：${{ env.FAST_IP }}"
